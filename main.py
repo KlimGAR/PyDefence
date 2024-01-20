@@ -1,9 +1,11 @@
+import math
 import sqlite3
+from datetime import datetime, timedelta
 from time import time
 
 import pygame
-from pygame import Vector2
 import pygame_gui
+from pygame import Vector2
 
 # Инициализация окна и подключение базы данных
 Base_Data = sqlite3.connect('PyDefenceBaseData.sqlite')
@@ -171,63 +173,76 @@ class ThirstLVL:
 class arch:
     def __init__(self, pos):
         self.pos = (pos[0] - 60, pos[1] - 120)
-        # self.area = x
-        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Arrow.png'), (30, 10))
         self.image = pygame.image.load('C:/TESTpy/PyDefence/pics/arch.png')
         x, y = self.image.get_size()
         kof_x, kof_y = x / window_size[0], y / window_size[1]
         self.image = pygame.transform.scale(self.image, (x / kof_x - 1770, y / kof_y - 900))
         window_surface.blit(self.image, self.pos)
         pygame.display.flip()
-        self.damage = 10
-
-    def get_dam(self):
-        return self.damage
+        self.center = pos
+        self.area = 250
 
     def draw(self):
+        pygame.draw.circle(window_surface, 'red', self.center, self.area, 3)
         window_surface.blit(self.image, self.pos)
+
+    def out_area(self, cor):
+        if math.sqrt((cor[0] + self.center[0]) ** 2 + (cor[1] + self.center[1]) ** 2):
+            return True
+        return False
+
+    def attacking(self, end):
+        return Arrow([self.pos[0] + 5, self.pos[1], end])
 
 
 class magic:
     def __init__(self, pos):
         self.pos = (pos[0] - 60, pos[1] - 140)
-        # self.area = x
-        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Magic.png'), (30, 10))
         self.image = pygame.image.load('C:/TESTpy/PyDefence/pics/magic.png')
         x, y = self.image.get_size()
         kof_x, kof_y = x / window_size[0], y / window_size[1]
         self.image = pygame.transform.scale(self.image, (x / kof_x - 1760, y / kof_y - 875))
         window_surface.blit(self.image, self.pos)
         pygame.display.flip()
-        self.damage = 25
-
-    def get_dam(self):
-        return self.damage
+        self.center = pos
+        self.area = 200
 
     def draw(self):
+        pygame.draw.circle(window_surface, 'red', self.center, self.area, 3)
         window_surface.blit(self.image, self.pos)
+
+    def out_area(self, cor):
+        if math.sqrt((cor[0] + self.center[0]) ** 2 + (cor[1] + self.center[1]) ** 2):
+            return True
+        return False
+
+    def attacking(self, end):
+        return Magic_ball([self.pos[0] + 5, self.pos[1], end])
 
 
 class martira:
     def __init__(self, pos):
         self.pos = (pos[0] - 65, pos[1] - 95)
-        # self.area = x
-        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Shell.png'), (30, 10))
-        self.explosion = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Explotion.png'),
-                                                (160, 170))
         self.image = pygame.image.load('C:/TESTpy/PyDefence/pics/martira.png')
         x, y = self.image.get_size()
         kof_x, kof_y = x / window_size[0], y / window_size[1]
         self.image = pygame.transform.scale(self.image, (x / kof_x - 1770, y / kof_y - 930))
         window_surface.blit(self.image, self.pos)
         pygame.display.flip()
-        self.damage = 10
-
-    def get_dam(self):
-        return self.damage
+        self.center = pos
+        self.area = 400
 
     def draw(self):
+        pygame.draw.circle(window_surface, 'red', self.center, self.area, 3)
         window_surface.blit(self.image, self.pos)
+
+    def out_area(self, cor):
+        if math.sqrt((cor[0] + self.center[0]) ** 2 + (cor[1] + self.center[1]) ** 2) < self.area:
+            return True
+        return False
+
+    def attacking(self, end):
+        return Shell([self.pos[0] + 5, self.pos[1], end])
 
 
 def panel():
@@ -414,157 +429,192 @@ class Skull:
 # class Coin(sprite.):
 #    def __init__(self):
 
-
-class Green:
+class Units:
     def __init__(self, pos, way):
-        self.im_npc_gree = (
-            pygame.image.load('C:/TESTpy/PyDefence/pics/units/Green/Green slime 4.png'),
-            pygame.image.load('C:/TESTpy/PyDefence/pics/units/Green/Green slime 3.png'),
-            pygame.image.load('C:/TESTpy/PyDefence/pics/units/Green/Green slime 1.png')
-        )
-        self.kx, self.ky = screen_width / 2540, screen_height / 1600
-        size = (70 * self.kx, 50 * self.ky)
-        self.im_npc_green = [pygame.transform.scale(i, size) for i in self.im_npc_gree]
-        self.cost = 1
         self.way = way
+        self.pos = [pos[0], pos[1]]
+        self.kx, self.ky = screen_width / 2540, screen_height / 1600
+        self.size = (70 * self.kx, 50 * self.ky)
         self.direction = 0
-        self.speed = 10
-        self.hp = 20
-        self.center = [pos[0], pos[1]]
-        self.pos = [pos[0] - size[0] // 2, pos[1] - size[1] // 2]
-        window_surface.blit(self.im_npc_green[self.direction], self.pos)
-        pygame.draw.line(window_surface, 'red', (self.pos[0], self.pos[1]), (self.hp + self.pos[0], self.pos[1]))
-        cor = self.way[0]
-        for i in self.way[1:]:
-            pygame.draw.line(window_surface, 'red', cor, i, 5)
-            cor = i
-        print(f'путь {self.way}')
-        pygame.time.wait(10)
+        self.t_n = 0
 
     def get_way(self):
         return self.way
 
-    def move(self, dt: float | int):
-        if self.way: # Должен бфть урон ТУТ
-            cor = self.way[0]
-            for i in self.way[1:]:
-                pygame.draw.circle(window_surface, 'black', (cor[0], cor[1]), 5)
-                pygame.draw.line(window_surface, 'red', cor, i, 5)
-                cor = i
-            print(f'путь {self.way}')
-            pygame.time.wait(10)
-            if min(self.way[0][0] + 2, self.center[0]) != max(self.way[0][0] - 2, self.center[0]) and min(self.way[0][1] + 2, self.center[1]) != max(self.way[0][1] - 2, self.center[1]):
-                if min(self.way[0][0] + 2, self.center[0]) != max(self.way[0][0] - 2, self.center[0]):
+    def get_ip(self):
+        return self.pos
 
-                #    a = 1 if self.center[1] < self.way[0][1] else -1
-                #    self.pos[1] += dt * self.speed * a
-                #    self.center[1] += dt * self.speed * a
-                if min(self.way[0][1] + 2, self.center[1]) != max(self.way[0][1] - 2, self.center[1]):
-                    
-                #    a = 1 if self.center[0] < self.way[0][0] else -1
-                #    self.pos[0] += dt * self.speed * a
-                #    self.center[0] += dt * self.speed * a
-                window_surface.blit(self.im_npc_green[self.direction], self.pos)
-                pygame.draw.line(window_surface, 'red', (self.pos[0], self.pos[1]),
-                                 (self.hp + self.pos[0], self.pos[1]))
-                return
-            print(f'удалил {self.way[0]}')
-            self.way = self.way[1:]
-            self.move(dt)
+    def change_direct(self, vec_n: Vector2, vec_p: Vector2):
+        if vec_n.x > vec_p.x:
+            self.direction = 1
+        elif vec_n.x < vec_p.x:
+            self.direction = 2
+        else:
+            self.direction = 0
+
+    def get_around_point(self):
+        return self.t_n
 
 
-
-class Blue:
+class Green(Units):
     def __init__(self, pos, way):
-        self.im_npc_blu = (
+        super().__init__(pos, way)
+        self.im = (
+            pygame.image.load('C:/TESTpy/PyDefence/pics/units/Green/Green slime 4.png'),
+            pygame.image.load('C:/TESTpy/PyDefence/pics/units/Green/Green slime 3.png'),
+            pygame.image.load('C:/TESTpy/PyDefence/pics/units/Green/Green slime 1.png')
+        )
+        self.im = [pygame.transform.scale(i, self.size) for i in self.im]
+        self.cost = 1
+        self.speed = 40
+        self.hp = 20
+        window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
+        pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
+                         (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
+
+    def move(self, dt: float | int):
+        if self.way:
+            ip = self.way[0]
+            if min(ip[0] + 5, self.pos[0]) != max(ip[0] - 5, self.pos[0]) and min(ip[1] + 5, self.pos[1]) != max(
+                    ip[1] - 5, self.pos[1]):
+                n = Vector2(*self.pos)
+                p = Vector2(*self.way[0])
+                self.change_direct(n, p)
+                n.move_towards_ip(p, self.speed * dt)
+                self.pos = (n.x, n.y)
+                window_surface.blit(self.im[self.direction],
+                                    (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
+                pygame.draw.line(window_surface, 'red',
+                                 (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
+                                 (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
+                self.t_n = dt
+                return
+            else:
+                self.way = self.way[1:]
+                self.move(dt)
+
+
+class Blue(Units):
+    def __init__(self, pos, way):
+        super().__init__(pos, way)
+        self.im = (
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Blue/Blue slime 4.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Blue/Blue slime 3.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Blue/Blue slime 1.png')
         )
-        kx, ky = screen_width / 2540, screen_height / 1600
-        size = (130 * kx, 100 * ky)
-        self.im_npc_blue = [pygame.transform.scale(i, size) for i in self.im_npc_blu]
+        self.kx, self.ky = screen_width / 2540, screen_height / 1600
+        self.size = (70 * self.kx, 50 * self.ky)
+        self.im = [pygame.transform.scale(i, self.size) for i in self.im]
         self.way = way
         self.direction = 0
         self.speed = 6
         self.hp = 40
-        self.pos = [pos[0] - size[0] / 2, pos[1] - size[1] / 2]
-        window_surface.blit(self.im_npc_blue[self.direction], self.pos)
-        pygame.draw.line(window_surface, 'red', (self.pos[0], self.pos[1]), (self.hp + self.pos[0], self.pos[1]))
+        self.pos = [pos[0], pos[1]]
+        window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
+        pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
+                         (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
 
-    def move(self, dt):
-        if self.pos != self.way[0]:
-            a = 1 if self.pos[1] < self.way[-1][1] else -1
-            self.pos[1] += dt * self.speed * a
-            a = 1 if self.pos[0] < self.way[-1][0] else -1
-            self.pos[0] += dt * self.speed * a
-            window_surface.blit(self.im_npc_blue[self.direction], self.pos)
-            pygame.draw.line(window_surface, 'red', (self.pos[0], self.pos[1]), (self.hp + self.pos[0], self.pos[1]))
-            return
-        self.way.remove(self.way[0])
-        self.move(dt)
+    def move(self, dt: float | int):
+        if self.way:
+            ip = self.way[0]
+            if min(ip[0] + 5, self.pos[0]) != max(ip[0] - 5, self.pos[0]) and min(ip[1] + 5, self.pos[1]) != max(
+                    ip[1] - 5, self.pos[1]):
+                n = Vector2(*self.pos)
+                p = Vector2(*self.way[0])
+                n.move_towards_ip(p, self.speed * dt)
+                self.pos = (n.x, n.y)
+                window_surface.blit(self.im[self.direction],
+                                    (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
+                pygame.draw.line(window_surface, 'red',
+                                 (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
+                                 (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
+                self.t_n = dt
+                return
+            else:
+                self.way = self.way[1:]
+                self.move(dt)
 
 
-class Red:
+class Red(Units):
     def __init__(self, pos, way):
-        self.im_npc_re = (
+        super().__init__(pos, way)
+        self.im = (
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Red/Red slime 4.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Red/Red slime 3.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Red/Red slime 1.png')
         )
-        kx, ky = screen_width / 2540, screen_height / 1600
-        size = (130 * kx, 100 * ky)
-        self.im_npc_red = [pygame.transform.scale(i, size) for i in self.im_npc_re]
+        self.kx, self.ky = screen_width / 2540, screen_height / 1600
+        self.size = (70 * self.kx, 50 * self.ky)
+        self.im = [pygame.transform.scale(i, self.size) for i in self.im]
         self.way = way
         self.direction = 0
         self.speed = 5
         self.hp = 60
         self.pos = [pos[0], pos[1]]
-        window_surface.blit(self.im_npc_red[self.direction], self.pos)
-        pygame.draw.line(window_surface, 'red', (self.pos[0], self.pos[1]), (self.hp + self.pos[0], self.pos[1]))
+        window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
+        pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
+                         (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
 
-    def move(self, dt):
-        if self.pos != self.way[0]:
-            a = 1 if self.pos[1] < self.way[-1][1] else -1
-            self.pos[1] += dt * self.speed * a
-            a = 1 if self.pos[0] < self.way[-1][0] else -1
-            self.pos[0] += dt * self.speed * a
-            window_surface.blit(self.im_npc_red[self.direction], self.pos)
-            pygame.draw.line(window_surface, 'red', (self.pos[0], self.pos[1]), (self.hp + self.pos[0], self.pos[1]))
-            return
-        self.way.remove(self.way[0])
-        self.move(dt)
+    def move(self, dt: float | int):
+        if self.way:  # Должен бфть урон ТУТ
+            ip = self.way[0]
+            if min(ip[0] + 5, self.pos[0]) != max(ip[0] - 5, self.pos[0]) and min(ip[1] + 5, self.pos[1]) != max(
+                    ip[1] - 5, self.pos[1]):
+                n = Vector2(*self.pos)
+                p = Vector2(*self.way[0])
+                n.move_towards_ip(p, self.speed * dt)
+                self.pos = (n.x, n.y)
+                window_surface.blit(self.im[self.direction],
+                                    (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
+                pygame.draw.line(window_surface, 'red',
+                                 (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
+                                 (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
+                self.t_n = dt
+                return
+            else:
+                self.way = self.way[1:]
+                self.move(dt)
 
 
-class Purple:
+class Purple(Units):
     def __init__(self, pos, way):
-        self.im_npc_purpl = (
+        super().__init__(pos, way)
+        self.im = (
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Purple/Purple slime 4.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Purple/Purple slime 3.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Purple/Purple slime 1.png')
         )
-        kx, ky = screen_width / 2540, screen_height / 1600
-        size = (130 * kx, 100 * ky)
-        self.im_npc_purple = [pygame.transform.scale(i, size) for i in self.im_npc_purpl]
+        self.kx, self.ky = screen_width / 2540, screen_height / 1600
+        self.size = (70 * self.kx, 50 * self.ky)
+        self.im = [pygame.transform.scale(i, self.size) for i in self.im]
         self.way = way
         self.direction = 0
         self.speed = 2
         self.hp = 100
         self.pos = [pos[0], pos[1]]
-        window_surface.blit(self.im_npc_purple[self.direction], self.pos)
-        pygame.draw.line(window_surface, 'red', (self.pos[0], self.pos[1]), (self.hp + self.pos[0], self.pos[1]))
+        window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
+        pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
+                         (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
 
-    def move(self, dt):
-        if self.pos != self.way[0]:
-            a = 1 if self.pos[1] < self.way[-1][1] else -1
-            self.pos[1] += dt * self.speed * a
-            a = 1 if self.pos[0] < self.way[-1][0] else -1
-            self.pos[0] += dt * self.speed * a
-            window_surface.blit(self.im_npc_purple[self.direction], self.pos)
-            pygame.draw.line(window_surface, 'red', (self.pos[0], self.pos[1]), (self.hp + self.pos[0], self.pos[1]))
-            return
-        self.way.remove(self.way[0])
-        self.move(dt)
+    def move(self, dt: float | int):
+        if self.way:
+            ip = self.way[0]
+            if min(ip[0] + 5, self.pos[0]) != max(ip[0] - 5, self.pos[0]) and min(ip[1] + 5, self.pos[1]) != max(
+                    ip[1] - 5, self.pos[1]):
+                n = Vector2(*self.pos)
+                p = Vector2(*self.way[0])
+                n.move_towards_ip(p, self.speed * dt)
+                self.pos = (n.x, n.y)
+                window_surface.blit(self.im[self.direction],
+                                    (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
+                pygame.draw.line(window_surface, 'red',
+                                 (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
+                                 (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
+                self.t_n = dt
+                return
+            else:
+                self.way = self.way[1:]
+                self.move(dt)
 
 
 class first_way:
@@ -625,9 +675,6 @@ class second_way:
                 self.inp_units[i] -= 1
                 return self.npc[i](self.start_point_im, self.pathway)
 
-    def get_pathway(self):
-        return self.pathway
-
 
 class third_way:
     def __init__(self, amount):
@@ -662,13 +709,66 @@ class third_way:
         return self.pathway
 
 
+def check_elapsed_time(start_time, elapsed_time):
+    current_time = datetime.now()
+    time_difference = current_time - start_time
+    if time_difference >= elapsed_time:
+        return True
+    else:
+        return False
+
+
+class Bullets:
+    def __init__(self, pos, sp, dm):
+        self.pos = pos
+        self.sp = sp
+        self.d = dm
+
+    def move(self, place):
+        p = Vector2(*place)
+        c = Vector2(*self.pos)
+        c.move_towards_ip(c, p)
+
+    def give_damage(self):
+        return self.d
+
+
+class Arrow(Bullets):
+    def __init__(self, pos, end_pos):
+        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Arrow.png'), (30, 10))
+        self.sp = 30
+        self.d = 10
+        super().__init__(pos, self.sp, self.d)
+
+
+class Magic_ball(Bullets):
+    def __init__(self, pos, end_pos):
+        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Magic.png'), (30, 10))
+        self.sp = 15
+        self.d = 25
+        super().__init__(pos, self.sp, self.d)
+
+
+class Shell(Bullets):
+    def __init__(self, pos, end_pos):
+        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Shell.png'), (30, 10))
+        self.end_ef = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Explotion.png'),
+                                             (160, 170))
+        self.sp = 20
+        self.d = 10
+        super().__init__(pos, self.sp, self.d)
+
+
 def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
+    start_time = 0  # ВРЕМЯ - ПЕРЕЗАРЯДКА
+    elapsed_time = 0
+
     game = level
     skull_and_way = {
         'A': first_way,
         'B': second_way,
-        'C': third_way}
-
+        'C': third_way
+    }
     # получения информации по начальной волне
     wave = game.first_way()
     skull_image = pygame.image.load('C:/TESTpy/PyDefence/pics/Skull.png')
@@ -676,7 +776,6 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
     working_paths: list[first_way, second_way, third_way] = []
     next = [game.second_way(), game.third_way()]
     print(wave)
-
     for i in wave.keys():
         pathway = skull_and_way[i](wave[i])
         working_paths.append(skull_and_way[i](wave[i]))
@@ -689,15 +788,18 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
 
     towers = []
     mobs: list[Green, Blue, Red, Purple] = []
+    bullets: list[Arrow, Magic_ball, Shell] = []
 
     selected_zone = None
     clock = pygame.time.Clock()
     max_fps = 60
     delta_time = 1 / max_fps
     timer = 0
+
     # Проверка
-    #for i in working_paths:
+    # for i in working_paths:
     #    print(f'{i}: {i.get_pathway()}')
+
     while True:
         clock.tick(max_fps)
         st_t = time()
@@ -749,14 +851,22 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
                                 min(x, int(cor[0])) != x and max(x, int(cor[2]) + int(cor[0])) != x):
                             skulls = []
                             wave = True
+                            start_time = datetime.now()
+                            elapsed_time = timedelta(seconds=3)
         level.update_bg()
         for i in hummers:
             i.draw()
         if wave is True:
-            # задержку в 2 секунды НУЖНО
-            for i in working_paths:
-                if any(i.get_npc()):
-                    mobs.append(i.spawn())
+            if check_elapsed_time(start_time, elapsed_time):
+                for i in working_paths:
+                    if any(i.get_npc()):
+                        mobs.append(i.spawn())
+                for tower in towers:
+                    for mob in mobs:
+                        if tower.out_area(mob.pos):
+                            bullets.append(tower.attacking())
+                start_time = datetime.now()
+
         for i in mobs:
             i.move(delta_time)
         for i in towers:
