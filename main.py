@@ -187,13 +187,12 @@ class arch:
         window_surface.blit(self.image, self.pos)
 
     def out_area(self, cor):
-        if math.sqrt((cor[0] + self.center[0]) ** 2 + (cor[1] + self.center[1]) ** 2):
+        if math.sqrt((abs(cor[0] - self.center[0])) ** 2 + (abs(cor[1] - self.center[1])) ** 2) <= self.area:
             return True
         return False
 
-    def attacking(self, end):
-        return Arrow([self.pos[0] + 5, self.pos[1], end])
-
+    def attacking(self):
+        return Arrow([self.pos[0] + 5, self.pos[1]])
 
 class magic:
     def __init__(self, pos):
@@ -212,12 +211,12 @@ class magic:
         window_surface.blit(self.image, self.pos)
 
     def out_area(self, cor):
-        if math.sqrt((cor[0] + self.center[0]) ** 2 + (cor[1] + self.center[1]) ** 2):
+        if math.sqrt((abs(cor[0] - self.center[0])) ** 2 + (abs(cor[1] - self.center[1])) ** 2) <= self.area:
             return True
         return False
 
-    def attacking(self, end):
-        return Magic_ball([self.pos[0] + 5, self.pos[1], end])
+    def attacking(self):
+        return Magic_ball([self.pos[0] + 5, self.pos[1]])
 
 
 class martira:
@@ -237,12 +236,12 @@ class martira:
         window_surface.blit(self.image, self.pos)
 
     def out_area(self, cor):
-        if math.sqrt((cor[0] + self.center[0]) ** 2 + (cor[1] + self.center[1]) ** 2) < self.area:
+        if math.sqrt((abs(cor[0] - self.center[0])) ** 2 + (abs(cor[1] - self.center[1])) ** 2) <= self.area:
             return True
         return False
 
-    def attacking(self, end):
-        return Shell([self.pos[0] + 5, self.pos[1], end])
+    def attacking(self):
+        return Shell([self.pos[0] + 5, self.pos[1]])
 
 
 def panel():
@@ -426,17 +425,79 @@ class Skull:
         return self.pos[0], self.pos[1], self.size[0], self.size[1]
 
 
+class Bullets:
+    def __init__(self, pos_start, sp, dm, im):
+        self.pos_start = pos_start
+        self.sp = sp
+        self.d = dm
+        self.im = im
+
+    def move(self):
+        window_surface.blit(self.im, self.pos_start)
+
+    def give_damage(self):
+        return self.d
+
+    def is_contact(self, pos):
+        if pos[0] - 2 <= self.pos_start[0] <= pos[0] + 2 and pos[1] - 2 <= self.pos_start[1] <= pos[1] + 2:
+            return True
+        return False
+
+    def get_pos(self):
+        return self.pos_start
+
+    def set_bul(self, new_pos):
+        self.pos_start = new_pos
+
+
+class Arrow(Bullets):
+    def __init__(self, pos):
+        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Arrow.png'), (30, 10))
+        self.sp = 60
+        self.d = 10
+        super().__init__(pos, self.sp, self.d, self.ammo)
+
+    def contact(self, pos):
+        pygame.draw.circle(window_surface, 'red', pos, 2, 2)
+
+
+class Magic_ball(Bullets):
+    def __init__(self, pos):
+        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Magic.png'), (30, 10))
+        self.sp = 60
+        self.d = 25
+        super().__init__(pos, self.sp, self.d, self.ammo)
+
+    def contact(self, pos):
+        pygame.draw.circle(window_surface, 'red', pos, 2, 2)
+
+
+class Shell(Bullets):
+    def __init__(self, pos):
+        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Shell.png'), (30, 30))
+        self.end_ef = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Explotion.png'),
+                                             (160, 170))
+        self.sp = 60
+        self.d = 10
+        super().__init__(pos, self.sp, self.d, self.ammo)
+
+    def contact(self, pos):
+        window_surface.blit(self.end_ef, (pos[0] - 80, pos[1] - 170))
+
+
 # class Coin(sprite.):
 #    def __init__(self):
 
 class Units:
-    def __init__(self, pos, way):
+    def __init__(self, pos, way, hp):
         self.way = way
         self.pos = [pos[0], pos[1]]
         self.kx, self.ky = screen_width / 2540, screen_height / 1600
         self.size = (70 * self.kx, 50 * self.ky)
         self.direction = 0
         self.t_n = 0
+        self.ammo: list[Arrow, Shell, Magic_ball] = []
+        self.hp = hp
 
     def get_way(self):
         return self.way
@@ -452,13 +513,33 @@ class Units:
         else:
             self.direction = 0
 
-    def get_around_point(self):
-        return self.t_n
+    def flying_ammo(self, dt):
+        if self.ammo:
+            for i in self.ammo:
+                n = Vector2(*i.get_pos())
+                p = Vector2(*self.pos)
+                n.move_towards_ip(p, i.sp * dt)
+                i.set_bul([n.x, n.y])
+                i.move()
+                if i.is_contact(self.pos):
+                    i.contact(self.pos)
+                    self.hp -= i.give_damage()
+                    del self.ammo[self.ammo.index(i)]
 
+
+
+    def add_ammo(self, bullet: Arrow | Shell | Magic_ball):
+        self.ammo.append(bullet)
+
+    def is_died(self):
+        if self.hp > 0:
+            return False
+        return True
 
 class Green(Units):
     def __init__(self, pos, way):
-        super().__init__(pos, way)
+        self.hp = 20
+        super().__init__(pos, way, self.hp)
         self.im = (
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Green/Green slime 4.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Green/Green slime 3.png'),
@@ -467,7 +548,6 @@ class Green(Units):
         self.im = [pygame.transform.scale(i, self.size) for i in self.im]
         self.cost = 1
         self.speed = 40
-        self.hp = 20
         window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
         pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
                          (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
@@ -488,15 +568,24 @@ class Green(Units):
                                  (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
                                  (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
                 self.t_n = dt
+                self.flying_ammo(dt)
                 return
             else:
                 self.way = self.way[1:]
                 self.move(dt)
 
+    # def get_around_point(self):
+    #     if self.way:
+    #         n = Vector2(*self.pos)
+    #         p = Vector2(*self.way[0])
+    #         n.move_towards_ip(p, self.speed * self.t_n * 7.5)
+    #         return [n.x, n.y]
+
 
 class Blue(Units):
     def __init__(self, pos, way):
-        super().__init__(pos, way)
+        self.hp = 40
+        super().__init__(pos, way, self.hp)
         self.im = (
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Blue/Blue slime 4.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Blue/Blue slime 3.png'),
@@ -506,9 +595,7 @@ class Blue(Units):
         self.size = (70 * self.kx, 50 * self.ky)
         self.im = [pygame.transform.scale(i, self.size) for i in self.im]
         self.way = way
-        self.direction = 0
-        self.speed = 6
-        self.hp = 40
+        self.speed = 30
         self.pos = [pos[0], pos[1]]
         window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
         pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
@@ -521,6 +608,7 @@ class Blue(Units):
                     ip[1] - 5, self.pos[1]):
                 n = Vector2(*self.pos)
                 p = Vector2(*self.way[0])
+                self.change_direct(n, p)
                 n.move_towards_ip(p, self.speed * dt)
                 self.pos = (n.x, n.y)
                 window_surface.blit(self.im[self.direction],
@@ -529,15 +617,24 @@ class Blue(Units):
                                  (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
                                  (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
                 self.t_n = dt
+                self.flying_ammo(dt)
                 return
             else:
                 self.way = self.way[1:]
                 self.move(dt)
 
+    # def get_around_point(self):
+    #     n = Vector2(*self.pos)
+    #     p = Vector2(*self.way[0])
+    #     self.change_direct(n, p)
+    #     n.move_towards_ip(p, self.speed * self.t_n * 2.5)
+    #     return [n.x, n.y]
+
 
 class Red(Units):
     def __init__(self, pos, way):
-        super().__init__(pos, way)
+        self.hp = 60
+        super().__init__(pos, way, self.hp)
         self.im = (
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Red/Red slime 4.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Red/Red slime 3.png'),
@@ -548,20 +645,20 @@ class Red(Units):
         self.im = [pygame.transform.scale(i, self.size) for i in self.im]
         self.way = way
         self.direction = 0
-        self.speed = 5
-        self.hp = 60
+        self.speed = 20
         self.pos = [pos[0], pos[1]]
         window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
         pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
                          (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
 
     def move(self, dt: float | int):
-        if self.way:  # Должен бфть урон ТУТ
+        if self.way:
             ip = self.way[0]
             if min(ip[0] + 5, self.pos[0]) != max(ip[0] - 5, self.pos[0]) and min(ip[1] + 5, self.pos[1]) != max(
                     ip[1] - 5, self.pos[1]):
                 n = Vector2(*self.pos)
                 p = Vector2(*self.way[0])
+                self.change_direct(n, p)
                 n.move_towards_ip(p, self.speed * dt)
                 self.pos = (n.x, n.y)
                 window_surface.blit(self.im[self.direction],
@@ -570,15 +667,24 @@ class Red(Units):
                                  (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
                                  (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
                 self.t_n = dt
+                self.flying_ammo(dt)
                 return
             else:
                 self.way = self.way[1:]
                 self.move(dt)
 
+    # def get_around_point(self):
+    #     n = Vector2(*self.pos)
+    #     p = Vector2(*self.way[0])
+    #     self.change_direct(n, p)
+    #     n.move_towards_ip(p, self.speed * self.t_n * 2.5)
+    #     return [n.x, n.y]
+
 
 class Purple(Units):
     def __init__(self, pos, way):
-        super().__init__(pos, way)
+        self.hp = 100
+        super().__init__(pos, way, self.hp)
         self.im = (
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Purple/Purple slime 4.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Purple/Purple slime 3.png'),
@@ -589,8 +695,7 @@ class Purple(Units):
         self.im = [pygame.transform.scale(i, self.size) for i in self.im]
         self.way = way
         self.direction = 0
-        self.speed = 2
-        self.hp = 100
+        self.speed = 25
         self.pos = [pos[0], pos[1]]
         window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
         pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
@@ -615,6 +720,13 @@ class Purple(Units):
             else:
                 self.way = self.way[1:]
                 self.move(dt)
+
+    # def get_around_point(self):
+    #     n = Vector2(*self.pos)
+    #     p = Vector2(*self.way[0])
+    #     self.change_direct(n, p)
+    #     n.move_towards_ip(p, self.speed * self.t_n * 2.5)
+    #     return [n.x, n.y]
 
 
 class first_way:
@@ -684,7 +796,6 @@ class third_way:
             2: Red,
             3: Purple
         }
-        print(amount)
         self.inp_units = [i for i in amount]
         kx, ky = (screen_width / 2540), (screen_height / 1600)
         self.start_point_im = (2110 * kx, 590 * ky)
@@ -718,47 +829,6 @@ def check_elapsed_time(start_time, elapsed_time):
         return False
 
 
-class Bullets:
-    def __init__(self, pos, sp, dm):
-        self.pos = pos
-        self.sp = sp
-        self.d = dm
-
-    def move(self, place):
-        p = Vector2(*place)
-        c = Vector2(*self.pos)
-        c.move_towards_ip(c, p)
-
-    def give_damage(self):
-        return self.d
-
-
-class Arrow(Bullets):
-    def __init__(self, pos, end_pos):
-        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Arrow.png'), (30, 10))
-        self.sp = 30
-        self.d = 10
-        super().__init__(pos, self.sp, self.d)
-
-
-class Magic_ball(Bullets):
-    def __init__(self, pos, end_pos):
-        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Magic.png'), (30, 10))
-        self.sp = 15
-        self.d = 25
-        super().__init__(pos, self.sp, self.d)
-
-
-class Shell(Bullets):
-    def __init__(self, pos, end_pos):
-        self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Shell.png'), (30, 10))
-        self.end_ef = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Explotion.png'),
-                                             (160, 170))
-        self.sp = 20
-        self.d = 10
-        super().__init__(pos, self.sp, self.d)
-
-
 def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
     start_time = 0  # ВРЕМЯ - ПЕРЕЗАРЯДКА
     elapsed_time = 0
@@ -775,7 +845,6 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
     skulls = []
     working_paths: list[first_way, second_way, third_way] = []
     next = [game.second_way(), game.third_way()]
-    print(wave)
     for i in wave.keys():
         pathway = skull_and_way[i](wave[i])
         working_paths.append(skull_and_way[i](wave[i]))
@@ -788,7 +857,7 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
 
     towers = []
     mobs: list[Green, Blue, Red, Purple] = []
-    bullets: list[Arrow, Magic_ball, Shell] = []
+    # bullets: list[Arrow, Magic_ball, Shell] = []
 
     selected_zone = None
     clock = pygame.time.Clock()
@@ -861,14 +930,24 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
                 for i in working_paths:
                     if any(i.get_npc()):
                         mobs.append(i.spawn())
+                    else:
+                        del working_paths[working_paths.index(i)]
                 for tower in towers:
                     for mob in mobs:
                         if tower.out_area(mob.pos):
-                            bullets.append(tower.attacking())
+                            mob.add_ammo(tower.attacking())
                 start_time = datetime.now()
-
+            if not working_paths:
+                wave = next[0]
+                del next[0]
+                for i in wave.keys():
+                    pathway = skull_and_way[i](wave[i])
+                    working_paths.append(skull_and_way[i](wave[i]))
+                    skulls.append(Skull(skull_image, pathway.get_start()))
         for i in mobs:
             i.move(delta_time)
+            if i.is_died():
+                del mobs[mobs.index(i)]
         for i in towers:
             i.draw()
         for i in skulls:
