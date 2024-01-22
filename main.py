@@ -11,9 +11,9 @@ from pygame import Vector2
 Base_Data = sqlite3.connect('PyDefenceBaseData.sqlite')
 cur = Base_Data.cursor()
 total = Base_Data.execute("""SELECT total FROM Total""").fetchone()[0]
-print(total)
 pygame.init()
 pygame.display.set_caption("PyDefense")
+all_sprites = pygame.sprite.Group()
 
 # Размер окна устройства
 display_info = pygame.display.Info()
@@ -183,7 +183,7 @@ class arch:
         self.area = 250
 
     def draw(self):
-        pygame.draw.circle(window_surface, 'red', self.center, self.area, 3)
+        # pygame.draw.circle(window_surface, 'red', self.center, self.area, 3)  зона атаки
         window_surface.blit(self.image, self.pos)
 
     def out_area(self, cor):
@@ -193,6 +193,7 @@ class arch:
 
     def attacking(self):
         return Arrow([self.pos[0] + 5, self.pos[1]])
+
 
 class magic:
     def __init__(self, pos):
@@ -207,7 +208,7 @@ class magic:
         self.area = 200
 
     def draw(self):
-        pygame.draw.circle(window_surface, 'red', self.center, self.area, 3)
+        # pygame.draw.circle(window_surface, 'red', self.center, self.area, 3)  зона атаки
         window_surface.blit(self.image, self.pos)
 
     def out_area(self, cor):
@@ -232,7 +233,7 @@ class martira:
         self.area = 400
 
     def draw(self):
-        pygame.draw.circle(window_surface, 'red', self.center, self.area, 3)
+        # pygame.draw.circle(window_surface, 'red', self.center, self.area, 3) зона атаки
         window_surface.blit(self.image, self.pos)
 
     def out_area(self, cor):
@@ -247,9 +248,10 @@ class martira:
 def panel():
     bg = pygame.Color(180, 180, 180, 90)
 
-    rect = pygame.draw.rect(window_surface, bg, (0, 0, window_size[0], window_size[1]))
+    rect = pygame.draw.rect(window_surface, (140, 190, 231), (0, 0, window_size[0], window_size[1]))
     rect = pygame.draw.rect(window_surface, (60, 60, 60), (screen_width // 2 - 105, screen_height // 2 - 65, 210, 130))
 
+    info = pygame.image.load('C:/TESTpy/PyDefence/pics/information.png')
     button_resume = pygame.image.load('C:/TESTpy/PyDefence/pics/Resume.png')
     button_exit_menu = pygame.image.load('C:/TESTpy/PyDefence/pics/Exit.png')
     div = pygame.image.load('C:/TESTpy/PyDefence/pics/Pause.png')
@@ -264,6 +266,7 @@ def panel():
 
     pygame.display.flip()
     while True:
+        window_surface.blit(info, (screen_width // 2 - 50, screen_height // 2 + 100))
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = pygame.mouse.get_pos()
@@ -282,6 +285,7 @@ def panel():
                         pygame.display.flip()
                         pygame.time.wait(100)
                         return False
+        pygame.display.flip()
 
 
 def start_window():
@@ -300,7 +304,15 @@ def start_window():
     button_exit = pygame.transform.scale(button_exit, (200, 50))
     window_surface.blit(button_play, (screen_width // 2 - 100, screen_height // 2 - 60))
     window_surface.blit(button_exit, (screen_width // 2 - 100, screen_height // 2 + 10))
-
+    update_query = cur.execute(f"""
+       UPDATE Total
+       SET total = {total}
+    """)
+    Score = pygame_gui.elements.UITextBox(
+        html_text=f'  TOTAL:\n{total}',
+        relative_rect=pygame.Rect((screen_width // 2 - 50, screen_height // 2 + 100), (100, 100)),
+        manager=ui_manager
+    )
     # выбор уровня(кнопки)
     pygame.draw.circle(window_surface, 'white', (screen_width // 2 - 100, screen_height // 2 + 80), 5)
     pygame.draw.circle(window_surface, 'white', (screen_width // 2, screen_height // 2 + 80), 5)
@@ -453,8 +465,8 @@ class Bullets:
 class Arrow(Bullets):
     def __init__(self, pos):
         self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Arrow.png'), (30, 10))
-        self.sp = 60
-        self.d = 10
+        self.sp = 100
+        self.d = 15
         super().__init__(pos, self.sp, self.d, self.ammo)
 
     def contact(self, pos):
@@ -477,7 +489,7 @@ class Shell(Bullets):
         self.ammo = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Shell.png'), (30, 30))
         self.end_ef = pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/effects/Explotion.png'),
                                              (160, 170))
-        self.sp = 60
+        self.sp = 140
         self.d = 10
         super().__init__(pos, self.sp, self.d, self.ammo)
 
@@ -485,11 +497,39 @@ class Shell(Bullets):
         window_surface.blit(self.end_ef, (pos[0] - 80, pos[1] - 170))
 
 
-# class Coin(sprite.):
-#    def __init__(self):
+class Coin:
+    def __init__(self, pos, dt):
+        self.frames = [[pygame.image.load('C:/TESTpy/PyDefence/pics/coin/coin_face.png'),
+                        pygame.image.load('C:/TESTpy/PyDefence/pics/coin/coin_bit-side.png'),
+                        pygame.image.load('C:/TESTpy/PyDefence/pics/coin/coin_side.png')],
+                       pygame.image.load('C:/TESTpy/PyDefence/pics/coin/coin_anim.png')]
+        self.pos = pos
+        self.i = 0
+        self.time = timedelta(seconds=5)
+        self.dt = dt
+
+    def draw(self, dt):
+        if self.time.seconds != 5:
+            window_surface.blit(self.frames[0][self.i], self.pos)
+            if self.dt > 100000:
+                self.i += 1
+            self.dt += dt
+            return True
+        else:
+            self.kill()
+            return False
+
+    def kill(self):
+        window_surface.blit(self.frames[1], self.pos)
+
+
+def finish_mob(hp):
+    return hp
+
 
 class Units:
-    def __init__(self, pos, way, hp):
+    def __init__(self, pos, way, hp, cost, score):
+        self.cost = cost
         self.way = way
         self.pos = [pos[0], pos[1]]
         self.kx, self.ky = screen_width / 2540, screen_height / 1600
@@ -498,6 +538,7 @@ class Units:
         self.t_n = 0
         self.ammo: list[Arrow, Shell, Magic_ball] = []
         self.hp = hp
+        self.score = score
 
     def get_way(self):
         return self.way
@@ -513,6 +554,7 @@ class Units:
         else:
             self.direction = 0
 
+    #
     def flying_ammo(self, dt):
         if self.ammo:
             for i in self.ammo:
@@ -526,27 +568,32 @@ class Units:
                     self.hp -= i.give_damage()
                     del self.ammo[self.ammo.index(i)]
 
-
-
     def add_ammo(self, bullet: Arrow | Shell | Magic_ball):
         self.ammo.append(bullet)
+
+    def bount(self):
+        return self.cost
+
+    def get_score(self):
+        return self.score
 
     def is_died(self):
         if self.hp > 0:
             return False
         return True
 
+
 class Green(Units):
     def __init__(self, pos, way):
         self.hp = 20
-        super().__init__(pos, way, self.hp)
+        self.cost = 1
+        super().__init__(pos, way, self.hp, self.cost, 1)
         self.im = (
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Green/Green slime 4.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Green/Green slime 3.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Green/Green slime 1.png')
         )
         self.im = [pygame.transform.scale(i, self.size) for i in self.im]
-        self.cost = 1
         self.speed = 40
         window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
         pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
@@ -574,29 +621,19 @@ class Green(Units):
                 self.way = self.way[1:]
                 self.move(dt)
 
-    # def get_around_point(self):
-    #     if self.way:
-    #         n = Vector2(*self.pos)
-    #         p = Vector2(*self.way[0])
-    #         n.move_towards_ip(p, self.speed * self.t_n * 7.5)
-    #         return [n.x, n.y]
-
 
 class Blue(Units):
     def __init__(self, pos, way):
         self.hp = 40
-        super().__init__(pos, way, self.hp)
+        self.cost = 4
+        super().__init__(pos, way, self.hp, self.cost, 2)
         self.im = (
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Blue/Blue slime 4.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Blue/Blue slime 3.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Blue/Blue slime 1.png')
         )
-        self.kx, self.ky = screen_width / 2540, screen_height / 1600
-        self.size = (70 * self.kx, 50 * self.ky)
         self.im = [pygame.transform.scale(i, self.size) for i in self.im]
-        self.way = way
         self.speed = 30
-        self.pos = [pos[0], pos[1]]
         window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
         pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
                          (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
@@ -622,31 +659,20 @@ class Blue(Units):
             else:
                 self.way = self.way[1:]
                 self.move(dt)
-
-    # def get_around_point(self):
-    #     n = Vector2(*self.pos)
-    #     p = Vector2(*self.way[0])
-    #     self.change_direct(n, p)
-    #     n.move_towards_ip(p, self.speed * self.t_n * 2.5)
-    #     return [n.x, n.y]
 
 
 class Red(Units):
     def __init__(self, pos, way):
         self.hp = 60
-        super().__init__(pos, way, self.hp)
+        self.cost = 20
+        super().__init__(pos, way, self.hp, self.cost, 5)
         self.im = (
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Red/Red slime 4.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Red/Red slime 3.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Red/Red slime 1.png')
         )
-        self.kx, self.ky = screen_width / 2540, screen_height / 1600
-        self.size = (70 * self.kx, 50 * self.ky)
         self.im = [pygame.transform.scale(i, self.size) for i in self.im]
-        self.way = way
-        self.direction = 0
         self.speed = 20
-        self.pos = [pos[0], pos[1]]
         window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
         pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
                          (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
@@ -673,30 +699,19 @@ class Red(Units):
                 self.way = self.way[1:]
                 self.move(dt)
 
-    # def get_around_point(self):
-    #     n = Vector2(*self.pos)
-    #     p = Vector2(*self.way[0])
-    #     self.change_direct(n, p)
-    #     n.move_towards_ip(p, self.speed * self.t_n * 2.5)
-    #     return [n.x, n.y]
-
 
 class Purple(Units):
     def __init__(self, pos, way):
         self.hp = 100
-        super().__init__(pos, way, self.hp)
+        self.cost = 100
+        super().__init__(pos, way, self.hp, self.cost, 15)
         self.im = (
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Purple/Purple slime 4.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Purple/Purple slime 3.png'),
             pygame.image.load('C:/TESTpy/PyDefence/pics/units/Purple/Purple slime 1.png')
         )
-        self.kx, self.ky = screen_width / 2540, screen_height / 1600
-        self.size = (70 * self.kx, 50 * self.ky)
         self.im = [pygame.transform.scale(i, self.size) for i in self.im]
-        self.way = way
-        self.direction = 0
         self.speed = 25
-        self.pos = [pos[0], pos[1]]
         window_surface.blit(self.im[self.direction], (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2))
         pygame.draw.line(window_surface, 'red', (self.pos[0] - self.size[0] // 2, self.pos[1] - self.size[1] // 2 - 10),
                          (self.pos[0] - self.size[0] // 2 + self.hp, self.pos[1] - self.size[1] // 2 - 10), 5)
@@ -720,13 +735,6 @@ class Purple(Units):
             else:
                 self.way = self.way[1:]
                 self.move(dt)
-
-    # def get_around_point(self):
-    #     n = Vector2(*self.pos)
-    #     p = Vector2(*self.way[0])
-    #     self.change_direct(n, p)
-    #     n.move_towards_ip(p, self.speed * self.t_n * 2.5)
-    #     return [n.x, n.y]
 
 
 class first_way:
@@ -823,15 +831,16 @@ class third_way:
 def check_elapsed_time(start_time, elapsed_time):
     current_time = datetime.now()
     time_difference = current_time - start_time
-    if time_difference >= elapsed_time:
-        return True
-    else:
-        return False
+    return time_difference >= elapsed_time
 
 
 def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
-    start_time = 0  # ВРЕМЯ - ПЕРЕЗАРЯДКА
-    elapsed_time = 0
+    global total
+    # ВРЕМЯ ____ СПАВНА ОБЬЕКТОВ
+    time_spawning, et_spawning = 0, 0
+    time_spawning_ar, et_spawning_ar = 0, 0
+    time_spawning_ma, et_spawning_ma = 0, 0
+    time_spawning_sh, et_spawning_sh = 0, 0
 
     game = level
     skull_and_way = {
@@ -839,6 +848,7 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
         'B': second_way,
         'C': third_way
     }
+
     # получения информации по начальной волне
     wave = game.first_way()
     skull_image = pygame.image.load('C:/TESTpy/PyDefence/pics/Skull.png')
@@ -853,21 +863,37 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
     x, y = game.get_kof()
     zones_ = [(i[0] / x, i[1] / y) for i in [(447, 876), (977, 687), (1128, 446), (1308, 998), (1708, 1006)]]
     hummers = [Hummer(pos) for pos in zones_]
+    hummers_delete = []
     zones = {hummers[i].get_pos(): zones_[i] for i in range(5)}
+
+    wallet = 30
+    icon_coin = pygame.image.load('C:/TESTpy/PyDefence/pics/coin/coin_face.png')
+    icon_coin = pygame.transform.scale(icon_coin, (90, 90))
+    size = (2136 / x, 100 / y)
+    window_surface.blit(icon_coin, size)
+
+    numbers = {'0': pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/numbers/zero.png'), (30, 40)),
+               '1': pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/numbers/one.png'), (30, 40)),
+               '2': pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/numbers/two.png'), (30, 40)),
+               '3': pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/numbers/three.png'), (30, 40)),
+               '4': pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/numbers/four.png'), (30, 40)),
+               '5': pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/numbers/five.png'), (30, 40)),
+               '6': pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/numbers/six.png'), (30, 40)),
+               '7': pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/numbers/seven.png'), (30, 40)),
+               '8': pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/numbers/eight.png'), (30, 40)),
+               '9': pygame.transform.scale(pygame.image.load('C:/TESTpy/PyDefence/pics/numbers/nine.png'), (30, 40))
+               }
 
     towers = []
     mobs: list[Green, Blue, Red, Purple] = []
-    # bullets: list[Arrow, Magic_ball, Shell] = []
+    coins = []
+    hp = 20
 
     selected_zone = None
     clock = pygame.time.Clock()
     max_fps = 60
     delta_time = 1 / max_fps
     timer = 0
-
-    # Проверка
-    # for i in working_paths:
-    #    print(f'{i}: {i.get_pathway()}')
 
     while True:
         clock.tick(max_fps)
@@ -886,23 +912,29 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
                             i.draw()
                     selected_zone = None
 
-                if event.key == pygame.K_1 and (selected_zone is not None):
+                if event.key == pygame.K_1 and (selected_zone is not None) and wallet >= 15:
+                    wallet -= 15
+                    hummers_delete.append([hummers.index(selected_zone), hummers[hummers.index(selected_zone)]])
                     hummers.remove(hummers[hummers.index(selected_zone)])
                     towers.append(arch(zones[selected_zone.get_pos()]))
                     selected_zone = None
 
-                if event.key == pygame.K_2 and (selected_zone is not None):
+                if event.key == pygame.K_2 and (selected_zone is not None) and wallet >= 45:
+                    wallet -= 45
+                    hummers_delete.append([hummers.index(selected_zone), hummers[hummers.index(selected_zone)]])
                     hummers.remove(hummers[hummers.index(selected_zone)])
                     towers.append(magic(zones[selected_zone.get_pos()]))
                     selected_zone = None
 
-                if event.key == pygame.K_3 and (selected_zone is not None):
+                if event.key == pygame.K_3 and (selected_zone is not None) and wallet >= 60:
+                    wallet -= 60
+                    hummers_delete.append([hummers.index(selected_zone), hummers[hummers.index(selected_zone)]])
                     hummers.remove(hummers[hummers.index(selected_zone)])
                     towers.append(martira(zones[selected_zone.get_pos()]))
                     selected_zone = None
             if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
                 if selected_zone is None:
-                    x, y = pygame.mouse.get_pos()
                     for hum in hummers:
                         h = hum.get_pos()
                         if (min(y, h[1]) != y and max(y, h[1] + 60) != y) and (
@@ -920,41 +952,136 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
                                 min(x, int(cor[0])) != x and max(x, int(cor[2]) + int(cor[0])) != x):
                             skulls = []
                             wave = True
-                            start_time = datetime.now()
-                            elapsed_time = timedelta(seconds=3)
+                            time_spawning = datetime.now()
+                            et_spawning = timedelta(seconds=3)
+                            time_spawning_ar, et_spawning_ar = datetime.now(), timedelta(seconds=1.5)
+                            time_spawning_ma, et_spawning_ma = datetime.now(), timedelta(seconds=2.5)
+                            time_spawning_sh, et_spawning_sh = datetime.now(), timedelta(seconds=2)
         level.update_bg()
         for i in hummers:
             i.draw()
         if wave is True:
-            if check_elapsed_time(start_time, elapsed_time):
+            if check_elapsed_time(time_spawning, et_spawning):
                 for i in working_paths:
                     if any(i.get_npc()):
                         mobs.append(i.spawn())
                     else:
                         del working_paths[working_paths.index(i)]
-                for tower in towers:
-                    for mob in mobs:
-                        if tower.out_area(mob.pos):
+                time_spawning = datetime.now()
+            for tower in towers:
+                for mob in mobs:
+                    if tower.out_area(mob.get_ip()):
+                        if type(tower) is arch and check_elapsed_time(time_spawning_ar, et_spawning_ar):
                             mob.add_ammo(tower.attacking())
-                start_time = datetime.now()
-            if not working_paths:
+                        elif type(tower) is martira and check_elapsed_time(time_spawning_sh, et_spawning_sh):
+                            mob.add_ammo(tower.attacking())
+                        elif type(tower) is magic and check_elapsed_time(time_spawning_ma, et_spawning_ma):
+                            mob.add_ammo(tower.attacking())
+            if check_elapsed_time(time_spawning_ar, et_spawning_ar):
+                time_spawning_ar = datetime.now()
+            if check_elapsed_time(time_spawning_sh, et_spawning_sh):
+                time_spawning_sh = datetime.now()
+            if check_elapsed_time(time_spawning_ma, et_spawning_ma):
+                time_spawning_ma = datetime.now()
+            if not working_paths and next:
                 wave = next[0]
                 del next[0]
                 for i in wave.keys():
                     pathway = skull_and_way[i](wave[i])
                     working_paths.append(skull_and_way[i](wave[i]))
                     skulls.append(Skull(skull_image, pathway.get_start()))
+            if not next and hp > 0 and not working_paths:
+                win()
+            elif hp <= 0:
+                lose()
         for i in mobs:
             i.move(delta_time)
+            if not i.get_way():
+                hp -= i.hp
             if i.is_died():
+                wallet += i.bount()
+                coins.append(Coin(i.pos, delta_time))
+                wallet += i.bount()
+                total += i.get_score()
                 del mobs[mobs.index(i)]
+        for i in coins:
+            if not i.draw(delta_time):
+                del coins[coins.index(i)]
         for i in towers:
             i.draw()
         for i in skulls:
             i.draw(skull_image)
+        for i in range(len(str(wallet))):
+            n = str(wallet)[::-1][i]
+            window_surface.blit(numbers[n], (size[0] + 250 - (40 * i), size[1] + 20))
+        for i in range(len(str(hp))):
+            n = str(hp)[::-1][i]
+            window_surface.blit(numbers[n], (100 - (40 * i), 100))
+        window_surface.blit(icon_coin, size)
         pygame.display.flip()
         timer += delta_time
         delta_time = time() - st_t
+
+
+def win():
+    bg = pygame.Color(180, 223, 90, 90)
+    rect = pygame.draw.rect(window_surface, bg, (0, 0, window_size[0], window_size[1]))
+    rect = pygame.draw.rect(window_surface, (60, 60, 60), (screen_width // 2 - 105, screen_height // 2 - 65, 210, 130))
+
+    button_exit_menu = pygame.image.load('C:/TESTpy/PyDefence/pics/Exit.png')
+    div = pygame.image.load('C:/TESTpy/PyDefence/pics/you win.png')
+
+    div = pygame.transform.scale(div, (350, 160))
+    button_exit_menu = pygame.transform.scale(button_exit_menu, (200, 50))
+
+    window_surface.blit(div, (screen_width // 2 - 175, screen_height // 2 - 400))
+    window_surface.blit(button_exit_menu, (screen_width // 2 - 100, screen_height // 2 + 10))
+
+    pygame.display.flip()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                if min(x, screen_width // 2 - 100) != x and max(x, screen_width // 2 + 100) != x:
+                    if min(y, screen_height // 2 + 10) != y and max(y, screen_height // 2 + 60) != y:
+                        button_exit_menu = pygame.image.load('C:/TESTpy/PyDefence/pics/Pressed button/Exit.png')
+                        button_exit_menu = pygame.transform.scale(button_exit_menu, (200, 50))
+                        window_surface.blit(button_exit_menu, (screen_width // 2 - 100, screen_height // 2 + 10))
+                        pygame.display.flip()
+                        pygame.time.wait(100)
+                        start_window()
+        pygame.display.flip()
+
+
+def lose():
+    bg = pygame.Color(158, 43, 73, 90)
+
+    rect = pygame.draw.rect(window_surface, bg, (0, 0, window_size[0], window_size[1]))
+    rect = pygame.draw.rect(window_surface, (60, 60, 60), (screen_width // 2 - 105, screen_height // 2 - 65, 210, 130))
+
+    button_exit_menu = pygame.image.load('C:/TESTpy/PyDefence/pics/Exit.png')
+    div = pygame.image.load('C:/TESTpy/PyDefence/pics/You Lose.png')
+
+    div = pygame.transform.scale(div, (350, 160))
+    button_exit_menu = pygame.transform.scale(button_exit_menu, (200, 50))
+
+    window_surface.blit(div, (screen_width // 2 - 175, screen_height // 2 - 400))
+    window_surface.blit(button_exit_menu, (screen_width // 2 - 100, screen_height // 2 + 10))
+
+    pygame.display.flip()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                if min(x, screen_width // 2 - 100) != x and max(x, screen_width // 2 + 100) != x:
+                    if min(y, screen_height // 2 + 10) != y and max(y, screen_height // 2 + 60) != y:
+                        button_exit_menu = pygame.image.load('C:/TESTpy/PyDefence/pics/Pressed button/Exit.png')
+                        button_exit_menu = pygame.transform.scale(button_exit_menu, (200, 50))
+                        window_surface.blit(button_exit_menu, (screen_width // 2 - 100, screen_height // 2 + 10))
+                        pygame.display.flip()
+                        pygame.time.wait(100)
+                        start_window()
+        pygame.display.flip()
 
 
 start_window()
