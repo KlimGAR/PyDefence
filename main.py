@@ -13,7 +13,6 @@ cur = Base_Data.cursor()
 total = Base_Data.execute("""SELECT total FROM Total""").fetchone()[0]
 pygame.init()
 pygame.display.set_caption("PyDefense")
-all_sprites = pygame.sprite.Group()
 
 # Размер окна устройства
 display_info = pygame.display.Info()
@@ -511,8 +510,7 @@ class Coin:
     def draw(self, dt):
         if self.time.seconds != 5:
             window_surface.blit(self.frames[0][self.i], self.pos)
-            if self.dt > 100000:
-                self.i += 1
+            self.i += 1
             self.dt += dt
             return True
         else:
@@ -996,13 +994,13 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
                 lose()
         for i in mobs:
             i.move(delta_time)
-            if not i.get_way():
-                hp -= i.hp
             if i.is_died():
                 wallet += i.bount()
                 coins.append(Coin(i.pos, delta_time))
                 wallet += i.bount()
                 total += i.get_score()
+                if not i.get_way():
+                    hp -= i.hp
                 del mobs[mobs.index(i)]
         for i in coins:
             if not i.draw(delta_time):
@@ -1014,9 +1012,12 @@ def start_game(level: FirstLVL | SecondLVL | ThirstLVL):
         for i in range(len(str(wallet))):
             n = str(wallet)[::-1][i]
             window_surface.blit(numbers[n], (size[0] + 250 - (40 * i), size[1] + 20))
-        for i in range(len(str(hp))):
-            n = str(hp)[::-1][i]
-            window_surface.blit(numbers[n], (100 - (40 * i), 100))
+        if hp > 0:
+            for i in range(len(str(hp))):
+                n = str(hp)[::-1][i]
+                window_surface.blit(numbers[n], (100 - (40 * i), 100))
+        else:
+            lose()
         window_surface.blit(icon_coin, size)
         pygame.display.flip()
         timer += delta_time
